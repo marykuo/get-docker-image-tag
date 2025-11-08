@@ -1,0 +1,47 @@
+name: Get Docker Image Tag
+description: Get docker image tag name from git tag or commit hash
+
+inputs:
+  ref_type:
+    description: "Type of git reference: branch or tag"
+    default: "${{ github.ref_type}}"
+    required: false
+  ref_name:
+    description: "Git tag name"
+    default: "${{ github.ref_name }}"
+    required: false
+  commit_hash:
+    description: "SHA-1 hash of a commit"
+    default: "${{ github.sha }}"
+    required: true
+  prefix:
+    description: "Optional prefix for output image_tag when using commit hash"
+    required: false
+  length:
+    description: "Length of commit hash to use"
+    default: "7"
+    required: false
+
+outputs:
+  image_tag:
+    description: Tag name derived from git tag or commit hash
+    value: ${{ steps.get-tag.outputs.image_tag }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set up docker image tag
+      shell: bash
+      id: get-tag
+      run: |
+        echo "current ref type: ${{ inputs.ref_type }}"
+        if [ "${{ inputs.ref_type }}" = "tag" ]; then
+            echo "image_tag=${{ inputs.ref_name }}" >> $GITHUB_OUTPUT
+        else
+            COMMIT_HASH=$(echo "${{ inputs.commit_hash }}" | cut -c1-${{ inputs.length }})
+            if [ -n "${{ inputs.prefix }}" ]; then
+                echo "image_tag=${{ inputs.prefix }}-${COMMIT_HASH}" >> $GITHUB_OUTPUT
+            else
+                echo "image_tag=${COMMIT_HASH}" >> $GITHUB_OUTPUT
+            fi
+        fi
